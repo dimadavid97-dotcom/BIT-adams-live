@@ -751,6 +751,9 @@ probability of profit.
 const API_KEY =
 "9ad169b63c6e40f1bb5dcdac9ec085b1";
 
+const TELEGRAM_WEBHOOK =
+"https://bit-adams-server.onrender.com/webhook";
+
 const TIMEFRAMES =
 [
   "M1",
@@ -1555,7 +1558,39 @@ async function requestAlerts(){
 
 }
 
+function sendTelegramNotification(title,body){
+
+  const combined=(title+" "+body).toUpperCase();
+  const symbol=
+    combined.includes("XAUUSD") || combined.includes("GOLD")
+    ? "XAUUSD"
+    : combined.includes("BTCUSD") || combined.includes("BITCOIN")
+    ? "BTCUSD"
+    : "MARKET";
+
+  fetch(TELEGRAM_WEBHOOK,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      action:title,
+      message:body,
+      symbol,
+      source:"BIT ADAMS APP"
+    })
+  })
+  .then(async response=>{
+    if(!response.ok){
+      const result=await response.json().catch(()=>({}));
+      throw new Error(result.error || "Telegram server error "+response.status);
+    }
+  })
+  .catch(error=>console.log("Telegram notification error",error));
+
+}
+
 function notify(title,body){
+
+  sendTelegramNotification(title,body);
 
   try{
 
