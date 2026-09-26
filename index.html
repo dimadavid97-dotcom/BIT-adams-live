@@ -1729,15 +1729,7 @@ function autoTrackSignal(s,source="AUTO"){
 
   const duplicate=
   history[s.asset]
-  .find(item=>
-    item.timeframe===s.timeframe
-    &&
-    item.side===s.side
-    &&
-    tradeIsActive(item)
-    &&
-    now-item.timestamp<10*60*1000
-  );
+  .find(item=>tradeIsActive(item));
 
   if(duplicate)
     return false;
@@ -1912,14 +1904,17 @@ async function checkForNewSignals(){
         if(fingerprint===previous)
           continue;
 
+        const tracked=autoTrackSignal(
+          candidate,
+          mode
+        );
+
+        if(!tracked)
+          continue;
+
         localStorage.setItem(
           storageKey,
           fingerprint
-        );
-
-        autoTrackSignal(
-          candidate,
-          mode
         );
 
         notify(
