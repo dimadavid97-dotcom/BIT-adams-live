@@ -1,0 +1,21 @@
+name: Keep BIT ADAMS server awake
+
+on:
+  schedule:
+    # Five-minute heartbeat, offset from the start of the hour to avoid the busiest minute.
+    - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping-render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping server and verify Telegram configuration
+        shell: bash
+        run: |
+          response="$(curl --silent --show-error --fail --retry 3 --retry-all-errors --retry-delay 10 --max-time 90 https://bit-adams-server.onrender.com/health)"
+          printf '%s' "$response" | python3 -c 'import json,sys; data=json.load(sys.stdin); assert data.get("status") == "UP", data; assert data.get("telegramConfigured") is True, data; print("BIT ADAMS server is UP; Telegram is configured.")'
