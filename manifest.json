@@ -1,11 +1,11 @@
 {
-  "name": "BIT ADAMS LIVE PREMIUM",
-  "short_name": "BIT ADAMS LIVE",
-  "description": "Live market dashboard and trading signals for Bitcoin, Gold, Oil, Brent, Amazon, NVIDIA, Apple and Tesla.",
+  "name": "BIT ADAMS Signals",
+  "short_name": "BIT ADAMS",
+  "description": "Live GOLD and BITCOIN signals with M5 and M15 confirmation and Telegram alerts.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#05070d",
-  "theme_color": "#05070d",
+  "background_color": "#07110d",
+  "theme_color": "#07110d",
   "orientation": "portrait-primary"
 }
