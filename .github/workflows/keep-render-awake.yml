@@ -1,6 +1,9 @@
 name: Keep BIT ADAMS server awake
 
 on:
+  push:
+    paths:
+      - ".github/workflows/keep-render-awake.yml"
   schedule:
     # Five-minute heartbeat, offset from the start of the hour to avoid the busiest minute.
     - cron: "2,7,12,17,22,27,32,37,42,47,52,57 * * * *"
