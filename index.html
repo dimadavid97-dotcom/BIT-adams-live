@@ -38,14 +38,14 @@
       </div>
       <p class="disclaimer">Setup score measures rule alignment, not the chance of winning. Signals are automated analysis and are not guaranteed results. Check high-impact USD news before trading; the calendar is not connected in this version.</p>
     </section>
-    <section class="view" id="history"><div class="intro"><div><div class="eyebrow">LOCAL TRADE RECORD</div><h2>History</h2><p>Updates are saved on this device when the app is open.</p></div></div><div class="tabs"><button class="tab active" data-history-filter="ALL">All assets</button><button class="tab" data-history-filter="XAUUSD">GOLD</button><button class="tab" data-history-filter="BTCUSD">BITCOIN</button></div><div id="historyList" class="history-list"><div class="empty">No tracked trades yet.</div></div><p class="disclaimer">Telegram alerts continue from the server. Device history can miss status changes while this app is closed.</p></section>
+    <section class="view" id="history"><div class="intro"><div><div class="eyebrow">TRADE HISTORY</div><h2>History</h2><p>Trade results are synced whenever the server provides the latest status.</p></div></div><div class="tabs"><button class="tab active" data-history-filter="ALL">All assets</button><button class="tab" data-history-filter="XAUUSD">GOLD</button><button class="tab" data-history-filter="BTCUSD">BITCOIN</button></div><div id="historyList" class="history-list"><div class="empty">No tracked trades yet.</div></div><p class="disclaimer">The app no longer invents a closed result from the age of a local record. Final WIN, LOST or BREAK-EVEN status must come from the server.</p></section>
     <section class="view" id="settings"><div class="intro"><div><div class="eyebrow">APP SETTINGS</div><h2>Settings</h2><p>Live data and Telegram are handled by the BIT ADAMS server.</p></div></div><section class="panel"><div class="settings-row"><span>Signal timeframe</span><b>M5 + M15</b></div><div class="settings-row"><span>Market data provider</span><b>Twelve Data</b></div><div class="settings-row"><span>Telegram notifications</span><b id="settingsTelegram">Checking…</b></div><div class="settings-row"><span>News calendar</span><b>Not connected</b></div><div class="settings-row"><span>Break-even rule</span><b>SL moves to ENTRY after TP1</b></div></section><div class="alert">This app displays signals only. It does not place trades. Verify each setup and use your own risk limits.</div></section>
   </main>
 </div>
 <div class="bottom-nav"><div class="bottom-inner"><button class="tab active" data-view="dashboard">Overview</button><button class="tab" data-view="history">History</button><button class="tab" data-view="settings">Settings</button></div></div>
 <script>
 const SERVER="https://bit-adams-server.onrender.com";
-const HISTORY_KEY="bitAdamsLocalHistoryV9";
+const HISTORY_KEY="bitAdamsLocalHistoryV10";
 let refreshing=false,historyFilter="ALL";
 const fmt=(value,symbol)=>{const n=Number(value);if(!Number.isFinite(n))return"—";return new Intl.NumberFormat("en-GB",{minimumFractionDigits:symbol==="BTCUSD"?2:2,maximumFractionDigits:2}).format(n)};
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
@@ -55,22 +55,14 @@ function recordTrade(symbol,trade){if(!trade||!trade.createdAt)return;const rows
 function historyOutcome(trade){const status=String(trade.status||"OPEN").toUpperCase();if(["WIN","TP3"].includes(status))return{label:"WIN",kind:"win",detail:"TP3 target hit · trade closed in profit"};if(["LOST","SL","STOP LOSS"].includes(status))return{label:"STOP LOSS",kind:"lost",detail:`Stop loss hit · ${fmt(trade.sl,trade.symbol)}`};if(["BREAK-EVEN","BREAK_EVEN","BE"].includes(status))return{label:"BREAK-EVEN",kind:"be",detail:`Closed at entry after TP1 · ${fmt(trade.entry,trade.symbol)}`};if(status==="TP2")return{label:"TP2 HIT",kind:"progress",detail:`Break-even stop at entry · ${fmt(trade.sl,trade.symbol)}`};if(status==="TP1")return{label:"TP1 HIT",kind:"progress",detail:`Break-even stop at entry · ${fmt(trade.sl,trade.symbol)}`};if(status==="OPEN")return{label:"OPEN",kind:"open",detail:`Stop loss · ${fmt(trade.sl,trade.symbol)}`};return{label:status,kind:"progress",detail:`Stop level · ${fmt(trade.sl,trade.symbol)}`}}function renderHistory(){
   const el=document.getElementById("historyList");
   const all=historyRead();
-  const activeRows=all.filter(x=>["OPEN","TP1","TP2"].includes(String(x.status||"").toUpperCase())).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
-  const newestActiveBySymbol=new Map();
-  for(const row of activeRows)if(!newestActiveBySymbol.has(row.symbol))newestActiveBySymbol.set(row.symbol,row.key);
-  const rows=all.filter(x=>historyFilter==="ALL"||x.symbol===historyFilter);
+  const rows=all.filter(x=>historyFilter==="ALL"||x.symbol===historyFilter).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
   if(!rows.length){el.innerHTML='<div class="empty">No tracked trades yet.</div>';return}
   el.innerHTML=rows.slice(0,60).map(x=>{
-    let outcome=historyOutcome(x);
-    const status=String(x.status||"OPEN").toUpperCase();
-    const ageMs=Date.now()-Date.parse(x.updatedAt||x.createdAt);
-    const active=["OPEN","TP1","TP2"].includes(status);
-    const staleDuplicate=active&&newestActiveBySymbol.get(x.symbol)!==x.key;
-    const staleAge=active&&(!Number.isFinite(ageMs)||ageMs>180000);
-    if(staleDuplicate||staleAge)outcome={label:"CHECK STATUS",kind:"stale",detail:staleDuplicate?"A newer signal exists; this device did not record the close result.":"No update for 3+ minutes; open state is unconfirmed."};
+    const outcome=historyOutcome(x);
     const assetName=x.symbol==="XAUUSD"?"GOLD":"BITCOIN";
     const directionClass=x.direction==="BUY"?"buy":"sell";
-    return '<article class="history-item"><div class="history-main"><b class="'+directionClass+'">'+assetName+' · '+esc(x.direction)+'</b><small>Entry '+fmt(x.entry,x.symbol)+' · '+new Date(x.createdAt).toLocaleString("en-GB")+'</small><small class="history-detail '+outcome.kind+'">'+esc(outcome.detail)+'</small></div><span class="status-badge '+outcome.kind+'">'+esc(outcome.label)+'</span></article>';
+    const when=Number.isFinite(Date.parse(x.createdAt))?new Date(x.createdAt).toLocaleString("en-GB"):"—";
+    return '<article class="history-item"><div class="history-main"><b class="'+directionClass+'">'+assetName+' · '+esc(x.direction)+'</b><small>Entry '+fmt(x.entry,x.symbol)+' · '+when+'</small><small class="history-detail '+outcome.kind+'">'+esc(outcome.detail)+'</small></div><span class="status-badge '+outcome.kind+'">'+esc(outcome.label)+'</span></article>';
   }).join("");
 }
 function levelMarkup(name,value,type,symbol){return `<div class="level ${type}"><span>${name}</span><strong>${fmt(value,symbol)}</strong></div>`}
