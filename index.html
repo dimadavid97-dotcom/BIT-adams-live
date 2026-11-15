@@ -44,11 +44,12 @@
         <article class="asset-card" id="card-BTCUSD"><div class="asset-head"><div class="asset-name">BITCOIN <span class="symbol">BTCUSD</span></div><span class="asset-badge">M5 ONLY</span></div><div class="price-row"><div class="price" id="price-BTCUSD">—</div><div class="move" id="move-BTCUSD">Waiting for market data</div></div><div class="chart-wrap" id="chart-BTCUSD"><div class="chart-head"><span>BTCUSD · M5 CANDLES</span><span>WAITING FOR DATA</span></div></div><div class="signal"><div><div class="signal-label">CURRENT SIGNAL</div><div class="signal-value wait" id="signal-BTCUSD">WAIT</div></div><span class="conf" id="confidence-BTCUSD">—</span></div><div class="levels" id="levels-BTCUSD"></div><div class="meta"><span id="align-BTCUSD">M5 —</span><span id="trade-BTCUSD">No open trade</span></div><div class="trade-state" id="state-BTCUSD">Signal levels appear when a confirmed setup is available.</div></article>
       </div>
 
-      <div class="section-title">PERFORMANCE · 0.01 LOT (ESTIMATED)</div>
+      <div class="section-title">TODAY · WIN RATE &amp; 0.01 LOT (EST.)</div>
       <div class="performance-grid">
         <div class="performance-card"><span class="perf-heading">GOLD · XAUUSD</span><strong class="perf-rate" id="wr-XAUUSD">—</strong><span class="perf-money" id="pl-XAUUSD">—</span><small id="n-XAUUSD">No closed trades</small></div>
         <div class="performance-card"><span class="perf-heading">BITCOIN · BTCUSD</span><strong class="perf-rate" id="wr-BTCUSD">—</strong><span class="perf-money" id="pl-BTCUSD">—</span><small id="n-BTCUSD">No closed trades</small></div>
       </div>
+      <p class="note">Daily figures use UK time. New tracking starts from the first opening of this version; previous results are cleared on this device.</p>
       <div class="section-title">CONNECTION &amp; RISK</div>
       <div class="info-grid">
         <section class="panel"><h3>Service status</h3><div class="health-list"><div class="health-row"><span>Market data</span><b id="dataStatus">Checking…</b></div><div class="health-row"><span>Signal server</span><b id="apiStatus">Checking…</b></div><div class="health-row"><span>Telegram alerts</span><b id="telegramStatus">Checking…</b></div></div><div id="connectionNote" class="alert" style="display:none"></div></section>
@@ -66,14 +67,38 @@
   <div class="stat-tile"><small>BREAK-EVEN</small><strong id="statBE">0</strong></div>
   <div class="stat-tile"><small>Est. P/L · 0.01 lot</small><strong id="statPnl">—</strong></div>
 </div>
-<p class="note" id="performanceNote">Win rate counts closed WIN and LOST trades only. Estimated gross P/L in USD excludes spreads, slippage, swaps and fees; actual results may differ.</p><div id="historyList" class="history-list"><div class="empty">No tracked trades yet.</div></div><p class="disclaimer">The app no longer invents a closed result from the age of a local record. Final WIN, LOST or BREAK-EVEN status must come from the server.</p></section>
+<p class="note" id="performanceNote">Win rate counts closed WIN and LOST trades only. Estimated gross P/L in USD excludes spreads, slippage, swaps and fees; actual results may differ.</p><div class="tabs" aria-label="History period"><button class="tab active" data-history-period="TODAY">Today (UK)</button><button class="tab" data-history-period="ALL">Since reset</button></div>
+<p class="note"><span id="performancePeriod">Today's results (UK)</span> · <span id="resetStarted">Fresh tracking</span></p>
+<div id="historyList" class="history-list"><div class="empty">No tracked trades yet.</div></div><p class="disclaimer">The app no longer invents a closed result from the age of a local record. Final WIN, LOST or BREAK-EVEN status must come from the server.</p></section>
     <section class="view" id="settings"><div class="intro"><div><div class="eyebrow">APP SETTINGS</div><h2>Settings</h2><p>Live data and Telegram are handled by the BIT ADAMS server.</p></div></div><section class="panel"><div class="settings-row"><span>Signal timeframe</span><b>M5 ONLY</b></div><div class="settings-row"><span>Market data provider</span><b>Twelve Data</b></div><div class="settings-row"><span>Telegram notifications</span><b id="settingsTelegram">Checking…</b></div><div class="settings-row"><label for="btcContractSize">BTCUSD contract size (BTC / lot)</label><input id="btcContractSize" class="contract-input" type="number" inputmode="decimal" step="any" min="0" placeholder="From MT5" aria-label="BTCUSD contract size from MT5"></div><p class="note">For BTCUSD dollar estimates, enter Contract size from MT5 → BTCUSD → Specification. GOLD uses 100 oz per lot for standard XAUUSD.</p><div class="settings-row"><span>News calendar</span><b>Not connected</b></div><div class="settings-row"><span>Break-even rule</span><b>SL moves to ENTRY after TP1</b></div></section><div class="alert">This app displays signals only. It does not place trades. Verify each setup and use your own risk limits.</div></section>
   </main>
 </div>
 <div class="bottom-nav"><div class="bottom-inner"><button class="tab active" data-view="dashboard">Overview</button><button class="tab" data-view="history">History</button><button class="tab" data-view="settings">Settings</button></div></div>
 <script>
 const SERVER="https://bit-adams-server.onrender.com";
-const HISTORY_KEY="bitAdamsLocalHistoryV10";
+const HISTORY_KEY="bitAdamsLocalHistoryV11Fresh";
+const RESET_AT_KEY="bitAdamsHistoryFreshResetAtV11";
+function beginFreshHistory(){
+  try{
+    if(Number.isFinite(Date.parse(localStorage.getItem(RESET_AT_KEY)||"")))return;
+    // User requested clearing old phone-local history. Do this once per device on upgrade.
+    for(const key of ["bitAdamsLocalHistoryV10","bitAdamsHistoryV8","bitAdamsHistory","bitAdamsHistoryV7"]){
+      localStorage.removeItem(key);
+    }
+    localStorage.setItem(HISTORY_KEY,"[]");
+    localStorage.setItem(RESET_AT_KEY,new Date().toISOString());
+  }catch(error){console.warn("History reset unavailable:",error)}
+}
+beginFreshHistory();
+function historyResetTime(){const t=Date.parse(localStorage.getItem(RESET_AT_KEY)||"");return Number.isFinite(t)?t:0}
+function isSinceReset(trade){const at=Date.parse(trade?.createdAt||"");return Number.isFinite(at)&&at>=historyResetTime()}
+function ukDay(value){const d=new Date(value);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/London",year:"numeric",month:"2-digit",day:"2-digit"}).format(d):""}
+function isTradeClosed(row){return ["WIN","TP3","LOST","SL","STOP LOSS","BREAK-EVEN","BREAK_EVEN","BE"].includes(String(row?.status||"").toUpperCase())}
+function isInPeriod(row,period){
+  if(period!=="TODAY")return true;
+  const date=isTradeClosed(row)?(row.closedAt||row.updatedAt||row.createdAt):row.createdAt;
+  return ukDay(date)===ukDay(Date.now());
+}
 
 const LOT_SIZE=0.01;
 const BTC_CONTRACT_KEY="bitAdamsBtcContractSize";
@@ -93,8 +118,8 @@ function estimatedPnl(trade){
   if(!direction)return null;
   return direction*(Number(exit)-Number(trade.entry))*LOT_SIZE*size;
 }
-function performanceStats(symbol="ALL"){
-  const records=historyRead().filter(row=>symbol==="ALL"||row.symbol===symbol);
+function performanceStats(symbol="ALL",period="TODAY"){
+  const records=historyRead().filter(row=>(symbol==="ALL"||row.symbol===symbol)&&isInPeriod(row,period));
   const wins=records.filter(row=>["WIN","TP3"].includes(String(row.status||"").toUpperCase())).length;
   const losses=records.filter(row=>["LOST","SL","STOP LOSS"].includes(String(row.status||"").toUpperCase())).length;
   const breakEven=records.filter(row=>["BREAK-EVEN","BREAK_EVEN","BE"].includes(String(row.status||"").toUpperCase())).length;
@@ -109,29 +134,32 @@ function renderPerformance(){
     document.getElementById("pl-"+symbol).textContent=s.pnl===null?"Est. P/L: —":"Est. P/L: "+usdString(s.pnl);
     document.getElementById("n-"+symbol).textContent=s.decided+" decided · "+s.wins+" WIN / "+s.losses+" LOST"+(s.unpriced?" · contract info needed":"");
   }
-  const s=performanceStats(historyFilter);
+  const s=performanceStats(historyFilter,historyPeriod);
   document.getElementById("statSignals").textContent=s.count;
   document.getElementById("statWins").textContent=s.wins;
   document.getElementById("statLost").textContent=s.losses;
   document.getElementById("statBE").textContent=s.breakEven;
   document.getElementById("statWinRate").textContent=s.winRate===null?"—":s.winRate.toFixed(1)+"%";
   document.getElementById("statPnl").textContent=s.pnl===null?"—":usdString(s.pnl);
+  const reset=historyResetTime();
+  document.getElementById("resetStarted").textContent=reset?"Fresh tracking since "+new Date(reset).toLocaleString("en-GB",{timeZone:"Europe/London",day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})+" UK":"Fresh tracking started";
+  document.getElementById("performancePeriod").textContent=historyPeriod==="TODAY"?"Today's results (UK)":"All results since reset";
   document.getElementById("performanceNote").textContent=s.unpriced
     ?"Estimated gross P/L unavailable for "+s.unpriced+" closed trade(s). For BTCUSD, set the broker's contract size in Settings; missing entry/exit values also prevent calculation. Win rate still counts verified outcomes."
     :"Win rate = WIN / (WIN + LOST); OPEN and BREAK-EVEN excluded. Estimated gross P/L is for 0.01 lot in USD, before spread, slippage, commission and swaps; this is not an MT5 account statement.";
 }
 
-let refreshing=false,historyFilter="ALL";
+let refreshing=false,historyFilter="ALL",historyPeriod="TODAY";
 const fmt=(value,symbol)=>{const n=Number(value);if(!Number.isFinite(n))return"—";return new Intl.NumberFormat("en-GB",{minimumFractionDigits:symbol==="BTCUSD"?2:2,maximumFractionDigits:2}).format(n)};
 const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-function historyRead(){try{const x=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
+function historyRead(){try{const x=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");return Array.isArray(x)?x.filter(isSinceReset):[]}catch{return[]}}
 function historyWrite(rows){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(rows.slice(0,250)))}catch{}}
-function recordTrade(symbol,trade){if(!trade||!trade.createdAt)return;const rows=historyRead();const key=`${symbol}:${trade.createdAt}`;const i=rows.findIndex(x=>x.key===key);const row={key,symbol,direction:trade.direction||"WAIT",status:trade.status||"OPEN",entry:trade.entry,sl:trade.sl,tp1:trade.tp1,tp2:trade.tp2,tp3:trade.tp3,createdAt:trade.createdAt,updatedAt:trade.updatedAt||new Date().toISOString(),closedAt:trade.closedAt,confidence:trade.confidence};if(i>=0)rows[i]=row;else rows.unshift(row);historyWrite(rows);renderHistory()}
+function recordTrade(symbol,trade){if(!trade||!trade.createdAt||!isSinceReset(trade))return;const rows=historyRead();const key=`${symbol}:${trade.createdAt}`;const i=rows.findIndex(x=>x.key===key);const row={key,symbol,direction:trade.direction||"WAIT",status:trade.status||"OPEN",entry:trade.entry,sl:trade.sl,tp1:trade.tp1,tp2:trade.tp2,tp3:trade.tp3,createdAt:trade.createdAt,updatedAt:trade.updatedAt||new Date().toISOString(),closedAt:trade.closedAt,confidence:trade.confidence};if(i>=0)rows[i]=row;else rows.unshift(row);historyWrite(rows);renderHistory()}
 function historyOutcome(trade){const status=String(trade.status||"OPEN").toUpperCase();if(["WIN","TP3"].includes(status))return{label:"WIN",kind:"win",detail:"TP3 target hit · trade closed in profit"};if(["LOST","SL","STOP LOSS"].includes(status))return{label:"STOP LOSS",kind:"lost",detail:`Stop loss hit · ${fmt(trade.sl,trade.symbol)}`};if(["BREAK-EVEN","BREAK_EVEN","BE"].includes(status))return{label:"BREAK-EVEN",kind:"be",detail:`Closed at entry after TP1 · ${fmt(trade.entry,trade.symbol)}`};if(status==="TP2")return{label:"TP2 HIT",kind:"progress",detail:`Break-even stop at entry · ${fmt(trade.sl,trade.symbol)}`};if(status==="TP1")return{label:"TP1 HIT",kind:"progress",detail:`Break-even stop at entry · ${fmt(trade.sl,trade.symbol)}`};if(status==="OPEN")return{label:"OPEN",kind:"open",detail:`Stop loss · ${fmt(trade.sl,trade.symbol)}`};return{label:status,kind:"progress",detail:`Stop level · ${fmt(trade.sl,trade.symbol)}`}}function renderHistory(){
   renderPerformance();
   const el=document.getElementById("historyList");
   const all=historyRead();
-  const rows=all.filter(x=>historyFilter==="ALL"||x.symbol===historyFilter).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
+  const rows=all.filter(x=>(historyFilter==="ALL"||x.symbol===historyFilter)&&isInPeriod(x,historyPeriod)).sort((a,b)=>Date.parse(b.createdAt)-Date.parse(a.createdAt));
   if(!rows.length){el.innerHTML='<div class="empty">No tracked trades yet.</div>';return}
   el.innerHTML=rows.slice(0,60).map(x=>{
     const outcome=historyOutcome(x);
@@ -176,7 +204,7 @@ async function syncServerHistory(){
     const rows=historyRead();
     const byKey=new Map(rows.map(x=>[x.key,x]));
     for(const trade of data.trades){
-      if(!trade?.createdAt||!trade?.symbol)continue;
+      if(!trade?.createdAt||!trade?.symbol||!isSinceReset(trade))continue;
       const key=trade.symbol+":"+trade.createdAt;
       byKey.set(key,{key,symbol:trade.symbol,direction:trade.direction||"WAIT",status:trade.status||"OPEN",entry:trade.entry,sl:trade.sl,tp1:trade.tp1,tp2:trade.tp2,tp3:trade.tp3,createdAt:trade.createdAt,updatedAt:trade.updatedAt||trade.closedAt||trade.createdAt,confidence:trade.confidence,closedAt:trade.closedAt});
     }
@@ -185,7 +213,12 @@ async function syncServerHistory(){
   }catch(error){console.warn("Server history sync failed:",error)}
 }
 async function testTelegram(){const button=document.getElementById("testTelegramBtn"),out=document.getElementById("telegramTestResult");button.disabled=true;button.textContent="SENDING…";out.textContent="";try{const data=await getJson("/api/test-telegram",15000);if(!data.ok)throw new Error(data.error||"Test failed");out.textContent="Test sent successfully. Check your Telegram chat.";out.style.color="var(--green)"}catch(error){out.textContent="Telegram test failed: "+(error.message||"unknown error");out.style.color="var(--red)"}finally{button.disabled=false;button.textContent="SEND TEST"}}
-document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===button.dataset.view));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===button.dataset.view));window.scrollTo({top:0,behavior:"smooth"})}));document.querySelectorAll("[data-history-filter]").forEach(button=>button.addEventListener("click",()=>{historyFilter=button.dataset.historyFilter;document.querySelectorAll("[data-history-filter]").forEach(x=>x.classList.toggle("active",x===button));renderHistory()}));document.getElementById("refreshBtn").addEventListener("click",refresh);document.getElementById("testTelegramBtn").addEventListener("click",testTelegram);const btcInput=document.getElementById("btcContractSize");btcInput.value=localStorage.getItem(BTC_CONTRACT_KEY)||"";btcInput.addEventListener("change",()=>{const value=Number(btcInput.value);if(btcInput.value.trim()&&Number.isFinite(value)&&value>0)localStorage.setItem(BTC_CONTRACT_KEY,String(value));else localStorage.removeItem(BTC_CONTRACT_KEY);renderHistory()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});renderHistory();refresh();setInterval(()=>{if(!document.hidden)refresh()},60000);
+document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===button.dataset.view));document.querySelectorAll(".view").forEach(x=>x.classList.toggle("active",x.id===button.dataset.view));window.scrollTo({top:0,behavior:"smooth"})}));document.querySelectorAll("[data-history-filter]").forEach(button=>button.addEventListener("click",()=>{historyFilter=button.dataset.historyFilter;document.querySelectorAll("[data-history-filter]").forEach(x=>x.classList.toggle("active",x===button));renderHistory()}));document.querySelectorAll("[data-history-period]").forEach(button=>button.addEventListener("click",()=>{
+  historyPeriod=button.dataset.historyPeriod;
+  document.querySelectorAll("[data-history-period]").forEach(x=>x.classList.toggle("active",x===button));
+  renderHistory();
+}));
+document.getElementById("refreshBtn").addEventListener("click",refresh);document.getElementById("testTelegramBtn").addEventListener("click",testTelegram);const btcInput=document.getElementById("btcContractSize");btcInput.value=localStorage.getItem(BTC_CONTRACT_KEY)||"";btcInput.addEventListener("change",()=>{const value=Number(btcInput.value);if(btcInput.value.trim()&&Number.isFinite(value)&&value>0)localStorage.setItem(BTC_CONTRACT_KEY,String(value));else localStorage.removeItem(BTC_CONTRACT_KEY);renderHistory()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});renderHistory();refresh();setInterval(()=>{if(!document.hidden)refresh()},60000);
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js",{scope:"./"}).catch(error=>console.error("Service worker registration failed",error)))}
 </script>
 </body>
